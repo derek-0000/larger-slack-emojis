@@ -1,25 +1,41 @@
-console.error("Content script loaded");
-
-const STYLE_ID = "larger-custom-emojis-style";
-
-async function injectCssFromFile(path) {
-  if (document.getElementById(STYLE_ID)) return;
-  try {
-    const url = browser.runtime.getURL(path);
-    console.error(url);
-    const css = await fetch(url).then((r) => r.text());
-    console.error(url);
-    const style = document.createElement("style");
-    style.id = STYLE_ID;
-    style.textContent = css;
-    document.documentElement.appendChild(style);
-  } catch (e) {
-    console.error("Failed to inject CSS:", e);
+const css = (unit) => `
+  .c-emoji__large {
+    width: ${unit} !important;
+    height: ${unit} !important;
   }
-}
+`;
 
-browser.runtime.onMessage.addListener(async (msg) => {
-  if (msg?.type === "ENLARGE_EMOJIS") {
-    await injectCssFromFile("styles/larger-custom-emojis.css");
+const removeEnlargement = () => {
+  const existingStyle = document.getElementById("enlargement-override-style");
+  if (existingStyle) {
+    existingStyle.remove();
   }
+};
+
+const enlargeEmojis = async () => {
+  removeEnlargement();
+  const { customSizeUnit } = await browser.storage.local.get("customSizeUnit");
+  const style = document.createElement("style");
+  style.id = "enlargement-override-style";
+  style.textContent = css(customSizeUnit);
+  document.documentElement.appendChild(style);
+};
+
+// Respond to storage changes triggered by the popup's checkbox
+browser.storage.onChanged.addListener((changes, area) => {
+  if (area === "local") {
+    if (
+      (changes.emojisEnlarged && changes.emojisEnlarged.newValue) ||
+      changes.customSizeUnit
+    ) {
+      enlargeEmojis();
+    } else {
+      removeEnlargement();
+    }
+  }
+});
+
+// Initialize enlargement
+browser.storage.local.get("emojisEnlarged").then((res) => {
+  res.emojisEnlarged && enlargeEmojis();
 });

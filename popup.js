@@ -1,17 +1,25 @@
 // popup.js
 // Handles popup UI logic
 
-const enlargeEmojis = async () => {
-  let [tab] = await browser.tabs.query({ active: true, currentWindow: true });
-  browser.tabs.sendMessage(tab.id, { type: "ENLARGE_EMOJIS" });
-};
-
 const toggle = document.getElementById("toggle");
-toggle.checked = true;
-enlargeEmojis();
+const input = document.getElementById("custom-size-unit");
+
+browser.storage.local.get("emojisEnlarged").then((res) => {
+  toggle.checked = res.emojisEnlarged ?? false;
+});
+
+browser.storage.local.get("customSizeUnit").then((res) => {
+  input.value = res.customSizeUnit ?? "";
+});
+
+input.addEventListener("change", async (e) => {
+  await browser.storage.local.set({
+    customSizeUnit: e.target.value,
+  });
+});
 
 toggle.addEventListener("change", async (e) => {
-  if (e.target.checked) {
-    enlargeEmojis();
-  }
+  await browser.storage.local.set({
+    emojisEnlarged: e.target.checked,
+  });
 });
