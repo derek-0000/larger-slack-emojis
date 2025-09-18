@@ -1,5 +1,5 @@
 const css = (unit) => `
-  .c-emoji__large {
+  .p-message_pane img.c-emoji__large:not([src*="production-standard-emoji-assets"]) {
     width: ${unit} !important;
     height: ${unit} !important;
   }
